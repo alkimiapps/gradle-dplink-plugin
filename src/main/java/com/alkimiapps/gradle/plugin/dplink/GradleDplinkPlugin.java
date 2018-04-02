@@ -9,9 +9,7 @@ public class GradleDplinkPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.getExtensions().create("dplinkExtenstions", GradleDplinkExtension.class);
         Task dplinkTask = project.getTasks().create(TASK_NAME, GradleDplinkTask.class);
         dplinkTask.dependsOn(project.getTasksByName("build", false));
-        System.out.println("Hello fom gradle dplink plugin");
     }
 }

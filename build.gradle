@@ -1,27 +1,29 @@
-
 buildscript {
     repositories {
         mavenCentral()
-        // The following is only necessary if you want to use SNAPSHOT releases.
-        // maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath 'org.junit.platform:junit-platform-gradle-plugin:1.1.0'
+        classpath "com.gradle.publish:plugin-publish-plugin:0.9.10"
     }
 }
+
+apply plugin: "com.gradle.plugin-publish"
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'java'
+apply plugin: 'org.junit.platform.gradle.plugin'
 
 repositories {
     mavenCentral()
     jcenter()
 }
 
-group 'com.alkimiapps.gradle.plugin'
+group 'com.alkimiapps'
 version '0.1'
-
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'java'
-apply plugin: 'jacoco'
-apply plugin: 'org.junit.platform.gradle.plugin'
+def pluginId = group + '.gradle-dplink-plugin'
 
 dependencies {
     compileOnly "org.projectlombok:lombok:1.16.20"
@@ -31,29 +33,25 @@ dependencies {
     testCompile "org.mockito:mockito-core:2.+"
 }
 
-jacocoTestReport {
-    reports {
-        xml.enabled true
-        html.enabled true
-    }
-}
-
-//
-
 gradlePlugin {
     plugins {
         gradleDplinkPlugin {
-            id = 'gradle-dplink-plugin'
-            implementationClass = 'com.alkimiapps.gradle.plugin.dplink.GradleDplinkPlugin'
+            id = pluginId
+            implementationClass = group + '.gradle.plugin.dplink.GradleDplinkPlugin'
         }
     }
 }
 
-//
-//uploadArchives {
-//    repositories {
-//        mavenDeployer {
-//            repository(url: uri('../repo'))
-//        }
-//    }
-//}
+pluginBundle {
+    website = 'https://bitbucket.org/AllanMichaelBoyd/gradle-dplink-plugin/'
+    vcsUrl = 'https://bitbucket.org/AllanMichaelBoyd/gradle-dplink-plugin'
+    description = 'A gradle build task for simplifying creation of custom Java9 jre environments.'
+    tags = ['java9', 'modules', 'jigsaw', 'jpms', 'jdeps', 'jlink']
+
+    plugins {
+        gradleDplinkPlugin {
+            id = pluginId
+            displayName = 'Gradle Dplink plugin'
+        }
+    }
+}

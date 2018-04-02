@@ -1,8 +1,24 @@
-# README #
+# gradle-dplink-plugin #
 
-Gradle plugin that uses jdeps to determine module dependencies. Then with those dependencies execute a jlink to build a jre containing the required dependencies.
+A gradle build task for simplifying creation of custom Java9 jre environments.
 
-### What is this repository for? ###
+## What problem does dplink try to solve? ##
+
+Java9 brings with it the ability to create custom java runtime execution (JRE) environments tailored to run a specific
+app or set of apps. I.e. using the Java Platform Module System (JPMS) aka project Jigsaw.
+
+In order to create a custom jre two command line utilities are required: jdeps and jlink. 
+
+dplink removes the need to invoke jdeps, collate the required java modules and then call jlink specifying those modules
+(i.e. dplink does the invocation of jdeps and jlink for you). 
+
+In addition you can tell dplink to embed an executable script inside the created jre that will run an executable
+jar.
+
+## Getting started ##
+
+
+ 
 
 * Quick summary
 * Version

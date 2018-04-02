@@ -1,6 +1,7 @@
 package com.alkimiapps.gradle.plugin.dplink.internal;
 
 import com.alkimiapps.javatools.FileUtils;
+import com.alkimiapps.javatools.Strings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -45,7 +46,7 @@ import static java.nio.file.Files.isDirectory;
 public class DplinkExecutor {
 
     public void dplink(@Nonnull Path buildFolderPath, @Nonnull Path javaHome, @Nonnull Path outputDir, @Nullable String mainClassName, @Nullable String executableJar) {
-        System.out.println("Hello from dplink executor");
+
         Optional<Stream<Path>> fileListStream = Optional.empty();
 
         try {
@@ -65,7 +66,7 @@ public class DplinkExecutor {
 
             if (dependentJavaModules.size() > 0) {
                 this.jlink(dependentJavaModules, javaHome, outputDir);
-                if (mainClassName != null) {
+                if (Strings.hasChars(mainClassName)) {
                     this.createApp(buildLibsDir, outputDir, mainClassName, executableJar);
                 }
             }
@@ -155,9 +156,13 @@ public class DplinkExecutor {
 
     private String classpath(@Nonnull Path buildLibsDir, @Nonnull Path jreLibDir, @Nonnull String executableJarName) throws IOException {
         return Files.list(buildLibsDir)
+                // only get jars from the build libs directory that are not the executable jar
                 .filter(path -> !(executableJarName.equals(path.getFileName().toString())))
+                // map out just the file name
                 .map(path -> path.getFileName().toString())
+                // prepend the file name with the jreLibDir - because that's where the jars are at runtime
                 .map(fileName -> jreLibDir.toString() + "/" + fileName)
+                // collect them all together joined by a : for the path separator
                 .collect(Collectors.joining(":"));
     }
 
@@ -166,13 +171,13 @@ public class DplinkExecutor {
             try {
                 List<Path> jarFiles = Files.list(libDir).collect(Collectors.toList());
                 fatalGuard(jarFiles.size() == 1, "Expected only a single jar in " +
-                        jreLibDir.toString() + " but found " + jarFiles.size() + ". Try specifying the executable jar.");
+                        jreLibDir.toString() + " but found " + jarFiles.size() + ". Try using the executableJar property to specify the executable jar file name.");
                 return jarFiles.get(0).getFileName().toString();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         };
-        String executableJarName = executableJar != null ? executableJar : findExecutableJar.apply(jreLibDir);
+        String executableJarName = Strings.hasChars(executableJar) ? executableJar : findExecutableJar.apply(jreLibDir);
 
         fatalGuard(exists(jreLibDir.resolve(executableJarName)), "Executable jar " +
                 jreLibDir.resolve(executableJarName).toString() + " does not exist.");

@@ -35,7 +35,6 @@ class GradleDplinkPluginTest {
 
         List<BuildTask> tasks = result.getTasks();
 
-        System.out.println(tasks);
         assertThat(
                 result.task(":" + TASK_NAME).getOutcome(),
                 equalTo(SUCCESS));
@@ -44,7 +43,7 @@ class GradleDplinkPluginTest {
     private void setUpTestProject() throws Exception {
         testProjectDir.create();
         File buildFile = testProjectDir.newFile("build.gradle");
-        writeFile(buildFile.getParent(), buildFile.getName(), "plugins { id 'gradle-dplink-plugin' }\n");
+        writeFile(buildFile.getParent(), buildFile.getName(), "plugins { id 'com.alkimiapps.gradle-dplink-plugin' }\n");
         File buildFolder = testProjectDir.newFolder("build");
         Path libsFolder = Files.createDirectories(buildFolder.toPath().resolve("libs"));
     }
