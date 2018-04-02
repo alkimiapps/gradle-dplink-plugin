@@ -1,5 +1,18 @@
+
+buildscript {
+    repositories {
+        mavenCentral()
+        // The following is only necessary if you want to use SNAPSHOT releases.
+        // maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    }
+    dependencies {
+        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.1.0'
+    }
+}
+
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 group 'com.alkimiapps.gradle.plugin'
@@ -8,10 +21,14 @@ version '0.1'
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'java'
 apply plugin: 'jacoco'
+apply plugin: 'org.junit.platform.gradle.plugin'
 
 dependencies {
+    compileOnly "org.projectlombok:lombok:1.16.20"
     compile gradleApi()
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile("org.junit.jupiter:junit-jupiter-api:5.+")
+    testRuntime("org.junit.jupiter:junit-jupiter-engine:5.+")
+    testCompile "org.mockito:mockito-core:2.+"
 }
 
 jacocoTestReport {
