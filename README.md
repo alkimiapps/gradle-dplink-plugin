@@ -50,4 +50,10 @@ e.g:
         executableJar="MyExecutableJar.jar"
     }
     
-    
+# Links
+
+- Gradle.org plugin publish location: https://plugins.gradle.org/plugin/com.alkimiapps.gradle-dplink-plugin
+
+## Licensing
+
+gradle-dplink-plugin is licensed under MIT license.
