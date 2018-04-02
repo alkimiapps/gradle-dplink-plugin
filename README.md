@@ -1,8 +1,8 @@
-# gradle-dplink-plugin #
+# gradle-dplink-plugin
 
 A gradle build task for simplifying creation of custom Java9 jre environments.
 
-## What problem does dplink try to solve? ##
+## Why?
 
 Java9 brings with it the ability to create custom java runtime execution (JRE) environments tailored to run a specific
 app or set of apps. I.e. using the Java Platform Module System (JPMS) aka project Jigsaw.
@@ -15,31 +15,39 @@ dplink removes the need to invoke jdeps, collate the required java modules and t
 In addition you can tell dplink to embed an executable script inside the created jre that will run an executable
 jar.
 
-## Getting started ##
+## Getting started
 
+In it's simplest form add the following to your build.gradle file:
 
- 
+    plugins {
+        id "com.alkimiapps.gradle-dplink-plugin" version "0.1"
+    }
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+Then invoke:
 
-### How do I get set up? ###
+    gradle dplink
+    
+That will build your project and make a jre in your local _build/app_ folder that contains only the java modules on 
+which your build is dependent.
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+If you have an executable jar and you would like the built jre to contain it along with an executable script
+to execute that executable jar, then you need to provide a bit more information to dplink in your build.gradle file.
 
-### Contribution guidelines ###
+At minimum you need to specify the main class name e.g (in your build.gradle file)
 
-* Writing tests
-* Code review
-* Other guidelines
+    dplink {
+        mainClassName="my.package.name.MyMainClassName"
+    }
+    
+I.e the java package and class name of the main class of the executable jar.
 
-### Who do I talk to? ###
+If your _build/libs_ folder contains a single jar then dplink assumes that it the executable jar and it will use that.
+On the other hand if your _build/libs_  contains multiple jars you'll need to tell dplink which one is the executable
+e.g:
 
-* Repo owner or admin
-* Other community or team contact
+    dplink {
+        mainClassName="my.package.name.MyMainClassName"
+        executableJar="MyExecutableJar.jar"
+    }
+    
+    

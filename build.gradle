@@ -43,8 +43,8 @@ gradlePlugin {
 }
 
 pluginBundle {
-    website = 'https://bitbucket.org/AllanMichaelBoyd/gradle-dplink-plugin/'
-    vcsUrl = 'https://bitbucket.org/AllanMichaelBoyd/gradle-dplink-plugin'
+    website = 'https://github.com/alkimiapps/gradle-dplink-plugin'
+    vcsUrl = 'https://github.com/alkimiapps/gradle-dplink-plugin'
     description = 'A gradle build task for simplifying creation of custom Java9 jre environments.'
     tags = ['java9', 'modules', 'jigsaw', 'jpms', 'jdeps', 'jlink']
 
