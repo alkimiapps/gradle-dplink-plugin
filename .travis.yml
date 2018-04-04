@@ -4,5 +4,5 @@ jdk:
 before_install:
     - wget http://services.gradle.org/distributions/gradle-4.6-bin.zip
     - unzip gradle-4.6-bin.zip
-    - export GRADLE_HOME=$PWD/gradle-2.10
+    - export GRADLE_HOME=$PWD/gradle-4.6
     - export PATH=$GRADLE_HOME/bin:$PATH
