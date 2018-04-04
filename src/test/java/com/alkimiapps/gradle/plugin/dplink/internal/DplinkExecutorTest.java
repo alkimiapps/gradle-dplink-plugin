@@ -4,6 +4,7 @@ import com.alkimiapps.javatools.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.util.Optional.of;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,9 +22,10 @@ class DplinkExecutorTest {
     private final Path buildDir = Paths.get(new URI("file:///tmp/build"));
     private final Path executableJarsPath = Paths.get("src","test","resources","fatjar");
     private final Path testJarsPath = Paths.get("src","test","resources","testJars");
-    private final Path libsPath = Paths.get(buildDir.toString(), "libs");
-    private final Path javaHome = new File(System.getProperty("java.home")).toPath();
-    private final Path outputDir = new File(buildDir.toFile().getAbsolutePath() + "/app").toPath();
+    private final Path libsPath = buildDir.resolve("libs");
+    private final Path outputDir = buildDir.resolve("app");
+
+    private DplinkConfig dplinkConfig;
 
     DplinkExecutorTest() throws URISyntaxException {}
 
@@ -33,6 +35,12 @@ class DplinkExecutorTest {
             FileUtils.forceDelete(buildDir.toFile());
         }
         Files.createDirectories(libsPath);
+
+        dplinkConfig = new DplinkConfig();
+        dplinkConfig.setBuildFolderPath(this.buildDir);
+        dplinkConfig.setBuildLibsDir(this.libsPath);
+        dplinkConfig.setOutputDir(this.outputDir);
+        dplinkConfig.setVerbose(true);
     }
 
     @Test
@@ -42,7 +50,8 @@ class DplinkExecutorTest {
 
         FileUtils.copyDirectory(testJarsPath.toFile(), libsPath.toFile());
 
-        new DplinkExecutor().dplink(buildDir, javaHome, outputDir, null, null);
+
+        new DplinkExecutor().dplink(dplinkConfig);
 
         assertTrue(Files.exists(outputDir));
         assertTrue(Files.exists(outputDir.resolve("bin")));
@@ -57,7 +66,7 @@ class DplinkExecutorTest {
 
         FileUtils.copyDirectory(testJarsPath.toFile(), libsPath.toFile());
 
-        new DplinkExecutor().dplink(buildDir, javaHome, outputDir, null, null);
+        new DplinkExecutor().dplink(dplinkConfig);
 
         assertTrue(Files.exists(outputDir));
         assertTrue(Files.exists(outputDir.resolve("bin")));
@@ -72,7 +81,8 @@ class DplinkExecutorTest {
 
         FileUtils.copyDirectory(executableJarsPath.toFile(), libsPath.toFile());
 
-        new DplinkExecutor().dplink(buildDir, javaHome, outputDir, "app.TakeAPeakDataLoader", null);
+        dplinkConfig.setMainClassName(of("app.TakeAPeakDataLoader"));
+        new DplinkExecutor().dplink(dplinkConfig);
 
         assertTrue(Files.exists(outputDir));
         assertTrue(Files.exists(outputDir.resolve("bin/app")));
@@ -88,7 +98,9 @@ class DplinkExecutorTest {
         FileUtils.copyDirectory(testJarsPath.toFile(), libsPath.toFile());
         FileUtils.copyDirectory(executableJarsPath.toFile(), libsPath.toFile());
 
-        new DplinkExecutor().dplink(buildDir, javaHome, outputDir, "app.TakeAPeakDataLoader", "executable-all.jar");
+        dplinkConfig.setMainClassName(of("app.TakeAPeakDataLoader"));
+        dplinkConfig.setExecutableJar(of("executable-all.jar"));
+        new DplinkExecutor().dplink(dplinkConfig);
 
         assertTrue(Files.exists(outputDir.resolve("bin/app")));
     }
@@ -103,9 +115,27 @@ class DplinkExecutorTest {
         FileUtils.copyDirectory(testJarsPath.toFile(), libsPath.toFile());
         FileUtils.copyDirectory(executableJarsPath.toFile(), libsPath.toFile());
 
+        dplinkConfig.setMainClassName(of("app.TakeAPeakDataLoader"));
+
         assertThrows(RuntimeException.class,
-                () -> new DplinkExecutor().dplink(buildDir, javaHome, outputDir, "app.TakeAPeakDataLoader", null));
+                () -> new DplinkExecutor().dplink(dplinkConfig));
 
         assertFalse(Files.exists(outputDir.resolve("bin/app")));
     }
+
+//    @Test
+//    void testDplinkWithJvmArgs() throws Exception {
+//
+//        assertFalse(Files.exists(outputDir));
+//
+//        Files.createDirectories(outputDir);
+//
+//        FileUtils.copyDirectory(testJarsPath.toFile(), libsPath.toFile());
+//        FileUtils.copyDirectory(executableJarsPath.toFile(), libsPath.toFile());
+//
+//        assertThrows(RuntimeException.class,
+//                () -> new DplinkExecutor().dplink(buildDir, null, javaHome, outputDir, "app.TakeAPeakDataLoader", null, null, null, null, false));
+//
+////        assertFalse(Files.exists(outputDir.resolve("bin/app")));
+//    }
 }

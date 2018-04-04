@@ -22,7 +22,7 @@ repositories {
 }
 
 group 'com.alkimiapps'
-version '0.1'
+version '0.2'
 def pluginId = group + '.gradle-dplink-plugin'
 
 dependencies {

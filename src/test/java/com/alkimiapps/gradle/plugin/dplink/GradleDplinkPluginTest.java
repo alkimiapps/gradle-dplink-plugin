@@ -45,6 +45,5 @@ class GradleDplinkPluginTest {
         File buildFile = testProjectDir.newFile("build.gradle");
         writeFile(buildFile.getParent(), buildFile.getName(), "plugins { id 'com.alkimiapps.gradle-dplink-plugin' }\n");
         File buildFolder = testProjectDir.newFolder("build");
-        Path libsFolder = Files.createDirectories(buildFolder.toPath().resolve("libs"));
     }
 }

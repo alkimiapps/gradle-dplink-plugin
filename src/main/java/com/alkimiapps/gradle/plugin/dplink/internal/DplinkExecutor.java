@@ -1,7 +1,6 @@
 package com.alkimiapps.gradle.plugin.dplink.internal;
 
 import com.alkimiapps.javatools.FileUtils;
-import com.alkimiapps.javatools.Strings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -24,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.alkimiapps.javatools.Sugar.fatalGuard;
+import static com.alkimiapps.javatools.Sugar.ifThen;
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
 
@@ -37,37 +37,43 @@ import static java.nio.file.Files.isDirectory;
  * custom jre in the outputDir location (e.g. build/app).
  * <p>
  * Optionally the name of an executable jar and the name of a main class for an executable jar can be specified. Doing
- * so informs DplinkExecutor to create an executable script for running the app. This script is named "app" and is
+ * so informs DplinkExecutor to create an executable script for running the app. This script is by default named "app" and is
  * created in the ${outputDir}/bin directory. If there is no executableJar but there is a mainClassName then DplinkExecutor will
- * expect that there is only a single jar (e.g. a fat jar) in the libs subdirectory and that that jar is an
- * executable jar. If an executableJar is specified and there are multiple jars in the libs subdirectory then these
- * jars are included in the classpath of the executable.
+ * expect that there is only a single jar in the libs subdirectory and that that jar is an executable jar. If an
+ * executableJar is specified and there are multiple jars in the libs subdirectory then these jars are included in the
+ * classpath of the executable.
  */
 public class DplinkExecutor {
 
-    public void dplink(@Nonnull Path buildFolderPath, @Nonnull Path javaHome, @Nonnull Path outputDir, @Nullable String mainClassName, @Nullable String executableJar) {
+    private boolean isVerbose;
+    private Path javaHome;
+
+    public void dplink(@Nonnull DplinkConfig dplinkConfig) {
+
+        this.isVerbose = dplinkConfig.isVerbose();
+        this.javaHome = dplinkConfig.getJavaHome();
 
         Optional<Stream<Path>> fileListStream = Optional.empty();
 
         try {
 
-            Path buildLibsDir = Files.createDirectories(buildFolderPath.resolve("libs"));
+            Files.createDirectories(dplinkConfig.getBuildLibsDir());
 
-            fatalGuard(exists(buildLibsDir), "No libs dir at: " + buildLibsDir.getParent().toString());
-            fatalGuard(isDirectory(buildLibsDir), "libs is not a directory: " + buildLibsDir.getParent().toString());
+            fatalGuard(exists(dplinkConfig.getBuildLibsDir()), "No libs dir at: " + dplinkConfig.getBuildLibsDir().getParent().toString());
+            fatalGuard(isDirectory(dplinkConfig.getBuildLibsDir()), "libs is not a directory: " + dplinkConfig.getBuildLibsDir().getParent().toString());
 
             Set<String> dependentJavaModules = new HashSet<>();
 
-            fileListStream = Optional.of(Files.list(buildLibsDir).parallel());
+            fileListStream = Optional.of(Files.list(dplinkConfig.getBuildLibsDir()).parallel());
             fileListStream.get()
                     .flatMap(this::dependentJavaModulesOfJar)
                     .forEach(dependentJavaModules::add);
 
 
             if (dependentJavaModules.size() > 0) {
-                this.jlink(dependentJavaModules, javaHome, outputDir);
-                if (Strings.hasChars(mainClassName)) {
-                    this.createApp(buildLibsDir, outputDir, mainClassName, executableJar);
+                this.jlink(dependentJavaModules, dplinkConfig.getOutputDir());
+                if (dplinkConfig.getMainClassName().isPresent()) {
+                    this.createApp(dplinkConfig);
                 }
             }
 
@@ -79,7 +85,7 @@ public class DplinkExecutor {
     }
 
     private Stream<String> dependentJavaModulesOfJar(@Nonnull Path jarPath) {
-        String[] jdepsCommand = {"jdeps", "--list-deps", jarPath.toString()};
+        String[] jdepsCommand = {this.javaHome.resolve("bin/jdeps").toString(), "--list-deps", jarPath.toString()};
 
         Function<InputStream, Stream<String>> commandOutputProcessing = (InputStream jdepsInputStream) -> {
             BufferedReader jdepsReader = new BufferedReader(new InputStreamReader(jdepsInputStream));
@@ -94,7 +100,7 @@ public class DplinkExecutor {
 
     }
 
-    private void jlink(@Nonnull Set<String> dependentJavaModules, @Nonnull Path javaHome, @Nonnull Path outputDir) {
+    private void jlink(@Nonnull Set<String> dependentJavaModules, @Nonnull Path outputDir) {
         String dependentJavaModulesString = dependentJavaModules.stream()
                 .collect(Collectors.joining(","));
 
@@ -107,9 +113,9 @@ public class DplinkExecutor {
         }
 
         String[] jlinkCommand = {
-                javaHome.resolve("bin/jlink").toString(),
+                this.javaHome.resolve("bin/jlink").toString(),
                 "--module-path",
-                javaHome.toString() + "/jmods:mlib",
+                this.javaHome.toString() + "/jmods:mlib",
                 "--add-modules",
                 dependentJavaModulesString,
                 "--output",
@@ -123,32 +129,45 @@ public class DplinkExecutor {
         this.execCommand(jlinkCommand);
     }
 
-    private void createApp(@Nonnull Path buildLibsDir, @Nonnull Path jreDir, @Nonnull String mainClassName, @Nullable String executableJar) {
-        Path jreLibPath = jreDir.resolve("lib");
+    private void createApp(@Nonnull DplinkConfig dplinkConfig) {
+
+        Path jreLibPath = dplinkConfig.getOutputDir().resolve("lib");
 
         fatalGuard(exists(jreLibPath), "No lib dir at: " + jreLibPath.getParent().toString());
         fatalGuard(isDirectory(jreLibPath), "lib is not a directory: " + jreLibPath.getParent().toString());
+        fatalGuard(dplinkConfig.getMainClassName().isPresent(), "Missing main class name - needed for executable jar");
 
         try {
-            String executableJarName = this.executableJarName(buildLibsDir, executableJar);
-            String classpath = this.classpath(buildLibsDir, jreLibPath, executableJarName);
-            FileUtils.copyDirectory(buildLibsDir.toFile(), jreLibPath.toFile());
-            this.makeAppScript(jreDir, executableJarName, mainClassName, classpath);
+            String executableJarName = this.executableJarName(dplinkConfig.getBuildLibsDir(), dplinkConfig.getExecutableJar());
+            String classpath = this.classpath(dplinkConfig.getBuildLibsDir(), jreLibPath, executableJarName);
+            FileUtils.copyDirectory(dplinkConfig.getBuildLibsDir().toFile(), jreLibPath.toFile());
+
+            String jvmArgs = dplinkConfig.getJvmArgs().orElse("");
+            String appArgs = dplinkConfig.getAppArgs().orElse("");
+
+            this.makeAppScript(dplinkConfig.getMainClassName().get(), executableJarName, classpath, jvmArgs, appArgs, dplinkConfig.getOutputDir());
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
-    private void makeAppScript(@Nonnull Path jrePath, @Nonnull String executableJarName, @Nonnull String mainClass, @Nonnull String classpath) throws IOException {
+    private void makeAppScript(@Nonnull String mainClass, @Nonnull String executableJarName, @Nonnull String classpath,
+                               @Nonnull String jvmArgs, @Nonnull String appArgs, @Nonnull Path outputDir) throws IOException {
 
-        String commandString = jrePath.resolve("bin") + "/java -jar " + jrePath.resolve("lib") + "/" + executableJarName + " " + mainClass;
+
+        String commandString = outputDir.resolve("bin") + "/java " + jvmArgs + " -jar " +
+                outputDir.resolve("lib") + "/" +
+                executableJarName + " " + mainClass + " " + appArgs;
+
         if (classpath.length() > 0) {
             commandString = commandString + " -cp " + classpath;
         }
-        Path appFilePath = Files.createFile(jrePath.resolve("bin/app"));
+
+        Path appFilePath = Files.createFile(outputDir.resolve("bin/app"));
         try (BufferedWriter writer = Files.newBufferedWriter(appFilePath)) {
             writer.write("#!/usr/bin/env bash\n");
-            writer.write(commandString + "\n");
+            // $* adds command line args
+            writer.write(commandString + " $*\n");
         }
 
         this.execCommand(new String[]{"chmod", "uog+x", appFilePath.toString()});
@@ -166,7 +185,7 @@ public class DplinkExecutor {
                 .collect(Collectors.joining(":"));
     }
 
-    private String executableJarName(@Nonnull Path jreLibDir, @Nullable String executableJar) {
+    private String executableJarName(@Nonnull Path jreLibDir, Optional<String> executableJar) {
         Function<Path, String> findExecutableJar = (Path libDir) -> {
             try {
                 List<Path> jarFiles = Files.list(libDir).collect(Collectors.toList());
@@ -177,7 +196,7 @@ public class DplinkExecutor {
                 throw new RuntimeException(e);
             }
         };
-        String executableJarName = Strings.hasChars(executableJar) ? executableJar : findExecutableJar.apply(jreLibDir);
+        String executableJarName = executableJar.orElseGet(() -> findExecutableJar.apply(jreLibDir));
 
         fatalGuard(exists(jreLibDir.resolve(executableJarName)), "Executable jar " +
                 jreLibDir.resolve(executableJarName).toString() + " does not exist.");
@@ -190,6 +209,7 @@ public class DplinkExecutor {
     }
 
     private Optional<Stream<String>> execCommand(@Nonnull String[] command, @Nullable Function<InputStream, Stream<String>> commandOutputProcessing) {
+        ifThen(this.isVerbose, () -> System.out.println("Dplink: " + Arrays.stream(command).collect(Collectors.joining(" "))));
         try {
             Process commandProcess = Runtime.getRuntime().exec(command);
             commandProcess.waitFor(20, TimeUnit.SECONDS);
