@@ -2,6 +2,9 @@
 
 A gradle build task for simplifying creation of custom Java9 jre environments.
 
+### Status
+[![Build Status](https://travis-ci.org/alkimiapps/gradle-dplink-plugin.svg?branch=master)](https://travis-ci.org/alkimiapps/gradle-dplink-plugin)
+
 ## Why?
 
 Java9 brings with it the ability to create custom java runtime execution (JRE) environments tailored to run a specific
