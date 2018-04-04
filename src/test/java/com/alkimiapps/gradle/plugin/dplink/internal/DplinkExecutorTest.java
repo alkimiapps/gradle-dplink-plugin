@@ -21,7 +21,7 @@ class DplinkExecutorTest {
 
     private final Path buildDir = Paths.get(new URI("file:///tmp/build"));
     private final Path executableJarsPath = Paths.get("src","test","resources","fatjar");
-    private final Path testJarsPath = Paths.get("src","test","resources","testJars");
+    private final Path testJarsPath = Paths.get("src","test","resources","testjars");
     private final Path libsPath = buildDir.resolve("libs");
     private final Path outputDir = buildDir.resolve("app");
 
