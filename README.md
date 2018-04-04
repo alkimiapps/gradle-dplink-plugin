@@ -70,6 +70,11 @@ All dplink tasks are optional but, depending on what you want to do, some may be
 - _javaHome_ : absolute path of your java installation (i.e. containing the bin directory with jdeps and jlink) - defaults to _System.getProperty("java.home")_
 - _outputDir_ : path (relative or absolute) specifying where the custom jre should be placed - defaults to _build/app_
 
+## ToDo
+
+- More tests and more configurability 
+- Better fat jar and thin jar support
+- Other stuff I haven't thought of yet
 
 ## Links
 
