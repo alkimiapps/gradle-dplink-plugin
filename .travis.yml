@@ -1,3 +1,5 @@
 language: java
 jdk:
   - oraclejdk9
+before_install:
+  - sudo apt-get install gradle-4.6
