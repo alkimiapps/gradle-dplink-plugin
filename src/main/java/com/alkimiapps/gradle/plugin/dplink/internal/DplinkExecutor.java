@@ -1,9 +1,5 @@
 package com.alkimiapps.gradle.plugin.dplink.internal;
 
-import com.alkimiapps.javatools.FileUtils;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -11,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +18,10 @@ import java.util.function.Function;
 import java.util.stream.BaseStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.alkimiapps.javatools.FileUtils;
 
 import static com.alkimiapps.javatools.Sugar.fatalGuard;
 import static com.alkimiapps.javatools.Sugar.ifThen;
@@ -47,11 +48,15 @@ public class DplinkExecutor {
 
     private boolean isVerbose;
     private Path javaHome;
+    private Path modulesHome;
+    private boolean allJavaModules;
 
     public void dplink(@Nonnull DplinkConfig dplinkConfig) {
 
         this.isVerbose = dplinkConfig.isVerbose();
         this.javaHome = dplinkConfig.getJavaHome();
+        this.modulesHome = dplinkConfig.getModulesHome();
+        this.allJavaModules = dplinkConfig.isAllJavaModules();
 
         Optional<Stream<Path>> fileListStream = Optional.empty();
 
@@ -64,10 +69,19 @@ public class DplinkExecutor {
 
             Set<String> dependentJavaModules = new HashSet<>();
 
-            fileListStream = Optional.of(Files.list(dplinkConfig.getBuildLibsDir()).parallel());
+            if(allJavaModules) {
+                allJavaModules().forEach(dependentJavaModules::add);
+            }else{
+            if( dplinkConfig.isFatJar() && dplinkConfig.getExecutableJar().isPresent() ) {
+                fileListStream = Optional.of( Stream.of( Paths.get(dplinkConfig.getExecutableJar().get()) ) );
+            } else                {
+                fileListStream = Optional.of( Files.list( dplinkConfig.getBuildLibsDir() ).parallel() );
+            }
+
             fileListStream.get()
                     .flatMap(this::dependentJavaModulesOfJar)
                     .forEach(dependentJavaModules::add);
+            }
 
 
             if (dependentJavaModules.size() > 0) {
@@ -84,14 +98,31 @@ public class DplinkExecutor {
         }
     }
 
+    private Stream<String> allJavaModules() {
+        String[] javaCommand = {this.javaHome.resolve("bin/java").toString(), "--list-modules", "--module-path", this.modulesHome.resolve( "jmods" ).toString()};
+
+        Function<InputStream, Stream<String>> commandOutputProcessing = (InputStream jdepsInputStream) -> {
+            BufferedReader jdepsReader = new BufferedReader(new InputStreamReader(jdepsInputStream));
+            return jdepsReader.lines()
+                    .map(String::trim)
+                      .map(s -> s.replaceFirst( "@.*$", "" ))
+                    .collect(Collectors.toSet())
+                    .parallelStream();
+        };
+
+        return this.execCommand(javaCommand, commandOutputProcessing).orElse(Stream.of());
+
+    }
+
     private Stream<String> dependentJavaModulesOfJar(@Nonnull Path jarPath) {
         String[] jdepsCommand = {this.javaHome.resolve("bin/jdeps").toString(), "--list-deps", jarPath.toString()};
 
         Function<InputStream, Stream<String>> commandOutputProcessing = (InputStream jdepsInputStream) -> {
             BufferedReader jdepsReader = new BufferedReader(new InputStreamReader(jdepsInputStream));
             return jdepsReader.lines()
-                    .filter(s -> s.contains("java."))
+                    .filter(s -> s.matches("^\\s*(java|jdk|javafx|oracle)\\..*$"))
                     .map(String::trim)
+                    .map(s -> s.replaceFirst( "/.*$", "" ))
                     .collect(Collectors.toSet())
                     .parallelStream();
         };
@@ -115,7 +146,7 @@ public class DplinkExecutor {
         String[] jlinkCommand = {
                 this.javaHome.resolve("bin/jlink").toString(),
                 "--module-path",
-                this.javaHome.toString() + "/jmods:mlib",
+                this.modulesHome.toString() + "/jmods:mlib",
                 "--add-modules",
                 dependentJavaModulesString,
                 "--output",
@@ -212,7 +243,7 @@ public class DplinkExecutor {
         ifThen(this.isVerbose, () -> System.out.println("Dplink: " + Arrays.stream(command).collect(Collectors.joining(" "))));
         try {
             Process commandProcess = Runtime.getRuntime().exec(command);
-            commandProcess.waitFor(20, TimeUnit.SECONDS);
+            commandProcess.waitFor(20, TimeUnit.MINUTES);
             try (InputStream commandInputStream = commandProcess.getInputStream()) {
                 fatalGuard(commandProcess.exitValue() == 0, () -> {
                     BufferedReader jlinkReader = new BufferedReader(new InputStreamReader(commandInputStream));
