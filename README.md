@@ -68,7 +68,10 @@ All dplink tasks are optional but, depending on what you want to do, some may be
 - _jvmArgs_ : jvm arguments to use for executing the app (e.g. -Xmx etc)
 - _appArgs_ : args that should be passed into the application (note these or more can also be specifed at app execution time i.e on the command line)
 - _javaHome_ : absolute path of your java installation (i.e. containing the bin directory with jdeps and jlink) - defaults to _System.getProperty("java.home")_
+- _modulesHome_ : absolute path of the java installation that should be the base for the resulting image, used to allow images for alternate operating systems - defaults to _System.getProperty("java.home")_     
 - _outputDir_ : path (relative or absolute) specifying where the custom jre should be placed - defaults to _build/app_
+- _fatJar_ :  `true` if the `exectuableJar` is a shaded or fat jar so all other jar files in the lib folder will be ignored - defaults to `false`
+- _allJavaModules_ : set to `true` only if jdeps should be skipped to speed up plugin execution time, note all available java modules will be copied to the image - defaults to `false`
 
 ## ToDo
 
