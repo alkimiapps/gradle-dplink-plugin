@@ -24,7 +24,7 @@ run an executable jar.
 In it's simplest form add the following to your build.gradle file:
 
     plugins {
-        id "com.alkimiapps.gradle-dplink-plugin" version "0.1"
+        id "com.alkimiapps.gradle-dplink-plugin" version "0.3"
     }
 
 Then invoke:
@@ -66,6 +66,7 @@ All dplink tasks are optional but, depending on what you want to do, some may be
 - _mainClassName_ : specifies the fully qualified class name of the main class of an executable jar
 - _executableJar_ : the name of the executable jar to use for creating the executable script
 - _jvmArgs_ : jvm arguments to use for executing the app (e.g. -Xmx etc)
+- _appName_ : name for the executable script when there is a mainClassName and executable jar - defaults to _app_
 - _appArgs_ : args that should be passed into the application (note these or more can also be specifed at app execution time i.e on the command line)
 - _javaHome_ : absolute path of your java installation (i.e. containing the bin directory with jdeps and jlink) - defaults to _System.getProperty("java.home")_
 - _modulesHome_ : absolute path of the java installation that should be the base for the resulting image, used to allow images for alternate operating systems - defaults to _System.getProperty("java.home")_     
