@@ -2,6 +2,7 @@ package com.alkimiapps.gradle.plugin.dplink;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import com.alkimiapps.gradle.plugin.dplink.internal.DplinkConfig;
 import com.alkimiapps.gradle.plugin.dplink.internal.DplinkExecutor;
@@ -9,6 +10,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.ResolvableDependencies;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 
@@ -24,17 +29,28 @@ import static java.util.Optional.of;
 public class GradleDplinkTask extends DefaultTask {
 
     // Gradle insists that all @Input properties must have a value. So, we use "" to indicate no value.
-    private @Input String javaHome = "";
-    private @Input String modulesHome = "";
-    private @Input String outputDir = "";
-    private @Input String executableJar = "";
-    private @Input String mainClassName = "";
-    private @Input String jvmArgs = "";
-    private @Input String appArgs = "";
-    private @Input String appName = "";
-    private @Input boolean allJavaModules;
-    private @Input boolean fatJar;
-    private @Input boolean verbose;
+    private @Input
+    String javaHome = "";
+    private @Input
+    String modulesHome = "";
+    private @Input
+    String outputDir = "";
+    private @Input
+    String executableJar = "";
+    private @Input
+    String mainClassName = "";
+    private @Input
+    String jvmArgs = "";
+    private @Input
+    String appArgs = "";
+    private @Input
+    String appName = "";
+    private @Input
+    boolean allJavaModules;
+    private @Input
+    boolean fatJar;
+    private @Input
+    boolean verbose;
 
     @TaskAction
     public void run() {
@@ -54,10 +70,29 @@ public class GradleDplinkTask extends DefaultTask {
         ifThen(hasChars(this.getOutputDir()), () -> dplinkConfig.setOutputDir(Paths.get(this.getOutputDir())));
         ifThen(hasChars(this.getExecutableJar()), () -> dplinkConfig.setExecutableJar(of(this.getExecutableJar())));
         ifThen(hasChars(this.getAppName()), () -> dplinkConfig.setAppName(this.getAppName()));
-        dplinkConfig.setAllJavaModules( this.allJavaModules );
+        Optional<ResolvableDependencies> runtimeDependencies = this.runtimeDependencies();
+        if (runtimeDependencies.isPresent()) {
+            System.out.println("#### " + runtimeDependencies.get().getPath());
+            FileCollection fileCollection = runtimeDependencies.get().getFiles();
+            fileCollection.getFiles().forEach(file -> { System.out.println("**** " + file.getAbsolutePath());});
+        }
+        dplinkConfig.setRuntimeDependencies(this.runtimeDependencies());
+        dplinkConfig.setAllJavaModules(this.allJavaModules);
         dplinkConfig.setFatJar(this.fatJar);
         dplinkConfig.setVerbose(this.verbose);
 
         new DplinkExecutor().dplink(dplinkConfig);
     }
+
+    private Optional<ResolvableDependencies> runtimeDependencies() {
+        ConfigurationContainer configurations = getProject().getConfigurations();
+        return configurations.getNames().stream()
+                .filter(name -> name.equals("runtime"))
+                .limit(1)
+                // Calling getByName if the named config doesn't exist causes an exception which is why we filter through getNames first
+                .map(runtime -> configurations.getByName("runtime"))
+                .map(Configuration::getIncoming)
+                .reduce((a, b) -> a);
+    }
+
 }

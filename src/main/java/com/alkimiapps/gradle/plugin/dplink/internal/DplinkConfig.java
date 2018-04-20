@@ -6,6 +6,7 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 
 import lombok.Data;
+import org.gradle.api.artifacts.ResolvableDependencies;
 
 @Data
 public class DplinkConfig {
@@ -19,8 +20,11 @@ public class DplinkConfig {
     private @Nonnull Optional<String>  jvmArgs = Optional.empty();
     private @Nonnull Optional<String>  appArgs = Optional.empty();
     private @Nonnull String appName = "app";
+    private @Nonnull Optional<ResolvableDependencies> runtimeDependencies;
     private boolean allJavaModules;
     private boolean fatJar;
     private boolean verbose;
+
+    public DplinkConfig() {}
 }
 

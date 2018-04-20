@@ -11,7 +11,7 @@ buildscript {
     }
 }
 
-apply plugin: "com.gradle.plugin-publish"
+apply plugin: 'com.gradle.plugin-publish'
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'java'
 apply plugin: 'org.junit.platform.gradle.plugin'
@@ -22,7 +22,7 @@ repositories {
 }
 
 group 'com.alkimiapps'
-version '0.3'
+version '0.4'
 def pluginId = group + '.gradle-dplink-plugin'
 
 dependencies {
