@@ -43,7 +43,6 @@ public class DplinkExecutor {
 	private Path modulesHome;
 	
 	public void dplink(@Nonnull DplinkConfig dplinkConfig) {
-		
 		this.isVerbose = dplinkConfig.getVerbose();
 		this.javaHome = dplinkConfig.getJavaHome();
 		this.modulesHome = dplinkConfig.getModulesHome();
@@ -52,7 +51,6 @@ public class DplinkExecutor {
 		Optional<Stream<Path>> fileListStream = Optional.empty();
 		
 		try {
-			
 			Files.createDirectories(dplinkConfig.getBuildLibsDir());
 			
 			fatalGuard(exists(dplinkConfig.getBuildLibsDir()), "No libs dir at: " + dplinkConfig.getBuildLibsDir().getParent().toString());
@@ -174,22 +172,18 @@ public class DplinkExecutor {
 	private void makeAppScript(@Nonnull String mainClass, @Nonnull String executableJarName, @Nonnull String classpath,
 							   @Nonnull String jvmArgs, @Nonnull String appArgs, @Nonnull Path outputDir) throws IOException {
 		
-		String commandString = outputDir.resolve("bin") + "/java " + jvmArgs + " -jar " +
-				outputDir.resolve("lib") + "/" +
-				executableJarName + " " + mainClass + " " + appArgs;
+		String commandString = "./java " + jvmArgs + " -jar ../lib/" + executableJarName + " " + mainClass + " " + appArgs;
 		
-		if (classpath.length() > 0) {
+		if (classpath.length() > 0)
 			commandString = commandString + " -cp " + classpath;
-		}
 		
-		Path appFilePath = Files.createFile(outputDir.resolve("bin/app"));
-		try (BufferedWriter writer = Files.newBufferedWriter(appFilePath)) {
-			writer.write("#!/usr/bin/env bash\n");
-			// $* adds command line args
-			writer.write(commandString + " $*\n");
-		}
+		Path unixExec = outputDir.resolve("bin/app");
+		Path winExec = outputDir.resolve("bin/app.bat");
+		Files.write(unixExec, ("#!/usr/bin/env bash\n" + commandString + " \"$@\"").getBytes());
+		Files.write(winExec, (commandString + " %*").getBytes());
 		
-		this.execCommand(new String[]{"chmod", "uog+x", appFilePath.toString()});
+		unixExec.toFile().setExecutable(true);
+		winExec.toFile().setExecutable(true);
 	}
 	
 	private String classpath(@Nonnull Path buildLibsDir, @Nonnull Path jreLibDir, @Nonnull String executableJarName) throws IOException {
