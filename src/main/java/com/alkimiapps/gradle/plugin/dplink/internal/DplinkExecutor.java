@@ -171,7 +171,6 @@ public class DplinkExecutor {
 	
 	private void makeAppScript(@Nonnull String mainClass, @Nonnull String executableJarName, @Nonnull String classpath,
 							   @Nonnull String jvmArgs, @Nonnull String appArgs, @Nonnull Path outputDir) throws IOException {
-		
 		String commandString = "./java " + jvmArgs + " -jar ../lib/" + executableJarName + " " + mainClass + " " + appArgs;
 		
 		if (classpath.length() > 0)

@@ -1,20 +1,24 @@
 package com.alkimiapps.gradle.plugin.dplink.internal
 
-import java.nio.file.Paths
+import org.gradle.api.file.FileCollection
+import java.io.File
 
-class DplinkConfig {
-	var javaHome = Paths.get(System.getProperty("java.home"))
-	var modulesHome = Paths.get(System.getProperty("java.home"))
-	var buildFolderPath = Paths.get("build")
-	var buildLibsDir = buildFolderPath.resolve("libs")
-	var outputDir = buildFolderPath.resolve("app")
-	var executableJar: String? = null
-	var mainClassName: String? = null
-	var jvmArgs: String? = null
-	var appArgs: String? = null
-	var appName = "app"
-	var allJavaModules: Boolean = false
-	var fatJar: Boolean = false
-	var verbose: Boolean = false
+interface DplinkConfig {
+	val buildDir: File
+	val outputDir: String
+	val scriptLocation: String
+	
+	val javaHome: String
+	val modulesHome: String
+	
+	val libs: FileCollection
+	
+	val executableJar: String
+	val mainClassName: String
+	val jvmArgs: String
+	val appArgs: String
+	
+	val allJavaModules: Boolean
+	val fatJar: Boolean
+	val verbose: Boolean
 }
-
