@@ -13,11 +13,11 @@ import java.nio.file.Paths
 /** The Gradle plugin dplink task. */
 open class DplinkTask : DefaultTask(), DplinkConfig {
 	
-	override val buildDir: File = project.buildDir
-	@Input override var javaHome = ""
-	@Input override var modulesHome = ""
-	@Input override var outputDir = ""
-	@Input override var executableJar = ""
+	final override val buildDir: File = project.buildDir
+	@Input override var javaHome = File(System.getProperty("java.home"))
+	@Input override var modulesHome = javaHome
+	@Input override var outputDir = buildDir.resolve("app")
+	@Input override var executableJar = File("")
 	@Input override var mainClassName = ""
 	@Input override var jvmArgs = ""
 	@Input override var appArgs = ""
@@ -29,12 +29,6 @@ open class DplinkTask : DefaultTask(), DplinkConfig {
 	
 	@TaskAction
 	fun run() {
-		if (outputDir.isEmpty())
-			outputDir = buildDir.resolve("app").toString()
-		if(javaHome.isEmpty())
-			javaHome = System.getProperty("java.home")
-		if(modulesHome.isEmpty())
-			modulesHome = System.getProperty("java.home")
 		DplinkExecutor(this)
 	}
 	

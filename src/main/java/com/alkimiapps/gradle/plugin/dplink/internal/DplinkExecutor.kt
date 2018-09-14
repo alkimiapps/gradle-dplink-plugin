@@ -29,27 +29,26 @@ fun failIf(condition: Boolean, message: String) {
  */
 class DplinkExecutor(val config: DplinkConfig) {
 	val buildDir = config.buildDir
-	val javaHome = File(config.javaHome)
-	val modulesHome = File(config.modulesHome)
-	val outputDir = File(config.outputDir)
-	val libs = config.libs.files.filter { it.isFile }
+	val javaHome = config.javaHome
+	val modulesHome = config.modulesHome
+	val outputDir = config.outputDir
+	val libs = config.libs.files.flatMap { if(it.isFile) listOf(it) else it.listFiles().asList() }
+	val executableJar = config.executableJar.takeUnless { it.name.isEmpty() }
 	
 	init {
 		val dependentJavaModules = ArrayList<String>()
 		if (config.allJavaModules) {
 			allJavaModules().forEach { dependentJavaModules.add(it) }
 		} else {
-			val libs =
-					if (config.fatJar && config.executableJar.isNotEmpty()) {
-						listOf(File(config.executableJar))
-					} else {
-						libs
-					}
-			libs.forEach { dependentJavaModules.addAll(dependentJavaModulesOfJar(it)) }
+			if (config.fatJar && executableJar != null) {
+				listOf(executableJar)
+			} else {
+				libs
+			}.forEach { dependentJavaModules.addAll(dependentJavaModulesOfJar(it)) }
 		}
 		
 		if (dependentJavaModules.isNotEmpty()) {
-			jlink(dependentJavaModules, File(config.outputDir))
+			jlink(dependentJavaModules, outputDir)
 			if (config.mainClassName.isNotEmpty())
 				createApp()
 		}
@@ -98,8 +97,10 @@ class DplinkExecutor(val config: DplinkConfig) {
 		failIf(config.mainClassName.isEmpty(), "Missing main class name - needed for executable jar")
 		
 		try {
-			val executableJar = executableJar(config.libs.files, config.executableJar)
+			val executableJar = executableJar()
 			val classpath = classpath(libs, jrelibs, executableJar)
+			if(config.verbose)
+				println("Copying $libs to $jrelibs")
 			libs.forEach { it.copyTo(jrelibs.resolve(it.name), true) }
 			
 			val jvmArgs = config.jvmArgs
@@ -112,13 +113,8 @@ class DplinkExecutor(val config: DplinkConfig) {
 		
 	}
 	
-	private fun executableJar(libs: Collection<File>, executableJar: String?): File {
-		val jar = if (executableJar != null) {
-			buildDir.resolve("libs").resolve(executableJar)
-		} else {
-			failIf(libs.size != 1, "Expected only a single jar in libs but found " + libs.size + ". Use the executableJar property to specify the executable jar file name.")
-			libs.first()
-		}
+	private fun executableJar(): File {
+		val jar = executableJar ?: config.libs.singleFile
 		failIf(!jar.exists(), "Executable jar $jar does not exist.")
 		return jar
 	}

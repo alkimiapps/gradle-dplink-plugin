@@ -5,15 +5,14 @@ import java.io.File
 
 interface DplinkConfig {
 	val buildDir: File
-	val outputDir: String
+	val outputDir: File
 	val scriptLocation: String
 	
-	val javaHome: String
-	val modulesHome: String
-	
 	val libs: FileCollection
+	val javaHome: File
+	val modulesHome: File
+	val executableJar: File
 	
-	val executableJar: String
 	val mainClassName: String
 	val jvmArgs: String
 	val appArgs: String
