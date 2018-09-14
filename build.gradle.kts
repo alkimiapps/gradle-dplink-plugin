@@ -12,7 +12,7 @@ repositories {
 	jcenter()
 }
 
-group = "com.github.Xerus2000"
+group = "com.alkimiapps"
 version = "0.4"
 val pluginId = "$group.gradle-dplink-plugin"
 
