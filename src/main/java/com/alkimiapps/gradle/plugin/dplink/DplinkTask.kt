@@ -21,7 +21,7 @@ open class DplinkTask : DefaultTask(), DplinkConfig {
 	@Input override var mainClassName = ""
 	@Input override var jvmArgs = ""
 	@Input override var appArgs = ""
-	@Input override var libs = project.fileTree("build/libs")
+	@Input override var libs: FileCollection = project.fileTree(buildDir.resolve("libs"))
 	@Input override var scriptLocation = "bin/app"
 	@Input override var allJavaModules: Boolean = false
 	@Input override var fatJar: Boolean = false

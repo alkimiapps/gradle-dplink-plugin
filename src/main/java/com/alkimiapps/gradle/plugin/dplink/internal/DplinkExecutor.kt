@@ -55,23 +55,26 @@ class DplinkExecutor(val config: DplinkConfig) {
 		}
 	}
 	
-	private fun allJavaModules(): Stream<String> {
+	private fun allJavaModules(): List<String> {
 		val javaCommand = arrayOf(javaHome.resolve("bin/java"), "--list-modules", "--module-path", modulesHome.resolve("jmods"))
-		return this.execCommand(*javaCommand).map { it.trim { it <= ' ' }.replaceFirst("@.*$".toRegex(), "") }
+		return execCommand(*javaCommand).trim().map { it.replaceFirst("@.*$".toRegex(), "") }
 		
 	}
 	
-	fun execCommand(vararg command: Any): Stream<String> {
+	fun execCommand(vararg command: Any): List<String> {
 		if (config.verbose)
 			System.out.println("Executing: " + command.joinToString(" "))
-		val commandProcess = Runtime.getRuntime().exec(command.map { it.toString() }.toTypedArray())
-		commandProcess.waitFor(10, TimeUnit.MINUTES)
-		commandProcess.inputStream.use {
+		val stdout = buildDir.resolve("tmp").resolve("dplink").resolve("stdout_" + command.first().toString().substringAfterLast("/").substringAfterLast("\\"))
+		stdout.parentFile.mkdirs()
+		val commandProcess = ProcessBuilder(command.map { it.toString() }).redirectError(ProcessBuilder.Redirect.INHERIT).redirectOutput(stdout).start()
+		commandProcess.waitFor(2, TimeUnit.MINUTES)
+		stdout.readLines().let {
 			if (commandProcess.exitValue() != 0) {
-				it.bufferedReader().forEachLine(System.err::println)
+				System.err.println()
+				it.forEach(System.out::println)
 				throw RuntimeException("Command failed with exit code " + commandProcess.exitValue() + ": " + command.joinToString(" "))
 			}
-			return it.bufferedReader().lines()
+			return it
 		}
 	}
 	
@@ -81,7 +84,7 @@ class DplinkExecutor(val config: DplinkConfig) {
 		this.execCommand(bin("jlink"), "--module-path", "$modulesHome/jmods:mlib", "--add-modules", modules.joinToString(","), "--output", outputDir, "--no-header-files", "--no-man-pages", "--compress=2")
 	}
 	
-	private fun dependentJavaModulesOfJar(jar: Any): Stream<String> {
+	private fun dependentJavaModulesOfJar(jar: Any): List<String> {
 		return this.execCommand(bin("jdeps"), "--list-deps", jar)
 				.filter { s -> s.matches("^\\s*(java|jdk|javafx|oracle)\\..*$".toRegex()) }.trim()
 				.map { s -> s.replaceFirst("/.*$".toRegex(), "") }
@@ -97,7 +100,7 @@ class DplinkExecutor(val config: DplinkConfig) {
 		try {
 			val executableJar = executableJar(config.libs.files, config.executableJar)
 			val classpath = classpath(libs, jrelibs, executableJar)
-			libs.forEach { it.copyTo(jrelibs) }
+			libs.forEach { it.copyTo(jrelibs.resolve(it.name), true) }
 			
 			val jvmArgs = config.jvmArgs
 			val appArgs = config.appArgs
@@ -144,6 +147,6 @@ class DplinkExecutor(val config: DplinkConfig) {
 	
 	fun bin(name: String) = javaHome.resolve("bin/$name")
 	
-	fun Stream<String>.trim() = map { it.trim { it <= ' ' } }
+	fun List<String>.trim() = map { it.trim { it <= ' ' } }
 	
 }

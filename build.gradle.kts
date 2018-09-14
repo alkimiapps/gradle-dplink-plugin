@@ -48,3 +48,5 @@ pluginBundle {
 tasks.withType<KotlinCompile> {
 	kotlinOptions.jvmTarget = "1.8"
 }
+
+println("Java version: ${JavaVersion.current()}")
