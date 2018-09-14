@@ -86,8 +86,8 @@ class DplinkExecutor(val config: DplinkConfig) {
 		this.execCommand(null, bin("jlink"), "--module-path", "$modulesHome/jmods:mlib", "--add-modules", modules.joinToString(","), "--output", outputDir, "--no-header-files", "--no-man-pages", "--compress=2")
 	}
 	
-	private fun dependentJavaModulesOfJar(jar: Any): List<String> =
-			execCommand("jdeps-$jar", bin("jdeps"), "--list-deps", jar)
+	private fun dependentJavaModulesOfJar(jar: File): List<String> =
+			execCommand("jdeps-${jar.nameWithoutExtension}", bin("jdeps"), "--list-deps", jar)
 					.filter { s -> s.matches("^\\s*(java|jdk|javafx|oracle)\\..*$".toRegex()) }.trim()
 					.map { s -> s.replaceFirst("/.*$".toRegex(), "") }
 	
@@ -128,7 +128,7 @@ class DplinkExecutor(val config: DplinkConfig) {
 		if (classpath.isNotEmpty())
 			commandString = "$commandString -cp $classpath"
 		
-		val unixExec = outputDir.resolve(config.scriptLocation)
+		val unixExec = outputDir.resolve(config.scriptsLocation)
 		val winExec = unixExec.resolveSibling(unixExec.nameWithoutExtension + ".bat")
 		
 		unixExec.writeText("#!/usr/bin/env bash\n$commandString \"$@\"")

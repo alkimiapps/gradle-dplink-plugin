@@ -6,7 +6,7 @@ import java.io.File
 interface DplinkConfig {
 	val buildDir: File
 	val outputDir: File
-	val scriptLocation: String
+	val scriptsLocation: String
 	
 	val libs: FileCollection
 	val javaHome: File

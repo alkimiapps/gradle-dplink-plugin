@@ -4,11 +4,10 @@ import com.alkimiapps.gradle.plugin.dplink.internal.DplinkConfig
 import com.alkimiapps.gradle.plugin.dplink.internal.DplinkExecutor
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileCollection
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import java.io.File
 
-/** The Gradle plugin dplink task. */
+/** The Gradle dplink plugin task. */
 open class DplinkTask : DefaultTask(), DplinkConfig {
 	
 	final override val buildDir: File = project.buildDir
@@ -19,8 +18,8 @@ open class DplinkTask : DefaultTask(), DplinkConfig {
 	@Input override var mainClassName = ""
 	@Input override var jvmArgs = ""
 	@Input override var appArgs = ""
-	@Input override var libs: FileCollection = project.fileTree(buildDir.resolve("libs"))
-	@Input override var scriptLocation = "bin/app"
+	@InputFiles override var libs: FileCollection = project.fileTree(buildDir.resolve("libs"))
+	@Input override var scriptsLocation = "bin/app"
 	@Input override var allJavaModules: Boolean = false
 	@Input override var fatJar: Boolean = false
 	@Input override var verbose: Boolean = false
