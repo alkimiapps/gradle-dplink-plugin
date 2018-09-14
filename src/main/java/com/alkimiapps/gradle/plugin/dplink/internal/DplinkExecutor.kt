@@ -28,14 +28,17 @@ fun failIf(condition: Boolean, message: String) {
  * classpath of the executable.
  */
 class DplinkExecutor(val config: DplinkConfig) {
-	val buildDir = config.buildDir
 	val javaHome = config.javaHome
 	val modulesHome = config.modulesHome
 	val outputDir = config.outputDir
-	val libs = config.libs.files.flatMap { if(it.isFile) listOf(it) else it.listFiles().asList() }
+	val libs = config.libs.files.flatMap { if (it.isFile) listOf(it) else it.listFiles().asList() }
 	val executableJar = config.executableJar.takeUnless { it.name.isEmpty() }
+	val tmpDir = config.buildDir.resolve("tmp").resolve("dplink").also {
+		it.deleteRecursively()
+		it.mkdirs()
+	}
 	
-	init {
+	fun execute() {
 		val dependentJavaModules = ArrayList<String>()
 		if (config.allJavaModules) {
 			allJavaModules().forEach { dependentJavaModules.add(it) }
@@ -56,38 +59,37 @@ class DplinkExecutor(val config: DplinkConfig) {
 	
 	private fun allJavaModules(): List<String> {
 		val javaCommand = arrayOf(javaHome.resolve("bin/java"), "--list-modules", "--module-path", modulesHome.resolve("jmods"))
-		return execCommand(*javaCommand).trim().map { it.replaceFirst("@.*$".toRegex(), "") }
+		return execCommand("allJavaModules", *javaCommand).trim().map { it.replaceFirst("@.*$".toRegex(), "") }
 		
 	}
 	
-	fun execCommand(vararg command: Any): List<String> {
+	fun execCommand(name: String?, vararg command: Any): List<String> {
 		if (config.verbose)
-			System.out.println("Executing: " + command.joinToString(" "))
-		val stdout = buildDir.resolve("tmp").resolve("dplink").resolve("stdout_" + command.first().toString().substringAfterLast("/").substringAfterLast("\\"))
-		stdout.parentFile.mkdirs()
-		val commandProcess = ProcessBuilder(command.map { it.toString() }).redirectError(ProcessBuilder.Redirect.INHERIT).redirectOutput(stdout).start()
-		commandProcess.waitFor(2, TimeUnit.MINUTES)
-		stdout.readLines().let {
-			if (commandProcess.exitValue() != 0) {
-				System.err.println()
-				it.forEach(System.out::println)
-				throw RuntimeException("Command failed with exit code " + commandProcess.exitValue() + ": " + command.joinToString(" "))
-			}
-			return it
+			println("Executing: " + command.joinToString(" "))
+		val builder = ProcessBuilder(command.map { it.toString() }).redirectError(ProcessBuilder.Redirect.INHERIT)
+		var stdout: File? = null
+		if (name != null) {
+			stdout = tmpDir.resolve("stdout_$name.txt")
+			builder.redirectOutput(stdout)
 		}
+		val process = builder.start()
+		process.waitFor(2, TimeUnit.MINUTES)
+		if (process.exitValue() != 0)
+			throw RuntimeException("Command failed with exit code ${process.exitValue()}: ${command.joinToString(" ")}\n" +
+					"Logs can be found at $tmpDir")
+		return stdout?.readLines() ?: listOf()
 	}
 	
 	private fun jlink(modules: Collection<String>, outputDir: File) {
 		if (outputDir.exists())
 			outputDir.deleteRecursively()
-		this.execCommand(bin("jlink"), "--module-path", "$modulesHome/jmods:mlib", "--add-modules", modules.joinToString(","), "--output", outputDir, "--no-header-files", "--no-man-pages", "--compress=2")
+		this.execCommand(null, bin("jlink"), "--module-path", "$modulesHome/jmods:mlib", "--add-modules", modules.joinToString(","), "--output", outputDir, "--no-header-files", "--no-man-pages", "--compress=2")
 	}
 	
-	private fun dependentJavaModulesOfJar(jar: Any): List<String> {
-		return this.execCommand(bin("jdeps"), "--list-deps", jar)
-				.filter { s -> s.matches("^\\s*(java|jdk|javafx|oracle)\\..*$".toRegex()) }.trim()
-				.map { s -> s.replaceFirst("/.*$".toRegex(), "") }
-	}
+	private fun dependentJavaModulesOfJar(jar: Any): List<String> =
+			execCommand("jdeps-$jar", bin("jdeps"), "--list-deps", jar)
+					.filter { s -> s.matches("^\\s*(java|jdk|javafx|oracle)\\..*$".toRegex()) }.trim()
+					.map { s -> s.replaceFirst("/.*$".toRegex(), "") }
 	
 	
 	private fun createApp() {
@@ -99,7 +101,7 @@ class DplinkExecutor(val config: DplinkConfig) {
 		try {
 			val executableJar = executableJar()
 			val classpath = classpath(libs, jrelibs, executableJar)
-			if(config.verbose)
+			if (config.verbose)
 				println("Copying $libs to $jrelibs")
 			libs.forEach { it.copyTo(jrelibs.resolve(it.name), true) }
 			

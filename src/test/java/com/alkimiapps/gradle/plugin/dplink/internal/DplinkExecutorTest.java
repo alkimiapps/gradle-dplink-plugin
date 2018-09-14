@@ -46,7 +46,7 @@ class DplinkExecutorTest {
 		
 		FileUtils.copyDirectory(testJarsPath.toFile(), libsPath.toFile());
 		
-		new DplinkExecutor(dplinkConfig);
+		new DplinkExecutor(dplinkConfig).execute();
 		
 		assertTrue(Files.exists(outputDir));
 		assertTrue(Files.exists(outputDir.resolve("bin")));
@@ -61,7 +61,7 @@ class DplinkExecutorTest {
 		
 		FileUtils.copyDirectory(testJarsPath.toFile(), libsPath.toFile());
 		
-		new DplinkExecutor(dplinkConfig);
+		new DplinkExecutor(dplinkConfig).execute();
 		
 		assertTrue(Files.exists(outputDir));
 		assertTrue(Files.exists(outputDir.resolve("bin")));
@@ -77,7 +77,7 @@ class DplinkExecutorTest {
 		FileUtils.copyDirectory(executableJarsPath.toFile(), libsPath.toFile());
 		
 		dplinkConfig.mainClassName = "app.TakeAPeakDataLoader";
-		new DplinkExecutor(dplinkConfig);
+		new DplinkExecutor(dplinkConfig).execute();
 		
 		assertTrue(Files.exists(outputDir));
 		assertTrue(Files.exists(outputDir.resolve("bin/app")));
@@ -95,7 +95,7 @@ class DplinkExecutorTest {
 		
 		dplinkConfig.mainClassName = "app.TakeAPeakDataLoader";
 		dplinkConfig.executableJar = "executable-all.jar";
-		new DplinkExecutor(dplinkConfig);
+		new DplinkExecutor(dplinkConfig).execute();
 		
 		assertTrue(Files.exists(outputDir.resolve("bin/app")));
 	}

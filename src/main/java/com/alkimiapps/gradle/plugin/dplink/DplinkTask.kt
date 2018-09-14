@@ -7,8 +7,6 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import java.io.File
-import java.nio.file.Path
-import java.nio.file.Paths
 
 /** The Gradle plugin dplink task. */
 open class DplinkTask : DefaultTask(), DplinkConfig {
@@ -29,7 +27,7 @@ open class DplinkTask : DefaultTask(), DplinkConfig {
 	
 	@TaskAction
 	fun run() {
-		DplinkExecutor(this)
+		DplinkExecutor(this).execute()
 	}
 	
 }
