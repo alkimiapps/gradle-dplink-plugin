@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	id("java")
-	id("java-gradle-plugin")
-	id("maven")
+	java
+	maven
+	`java-gradle-plugin`
 	id("org.jetbrains.kotlin.jvm") version "1.2.70"
 	id("com.gradle.plugin-publish") version "0.10.0"
 }
@@ -15,6 +15,9 @@ repositories {
 group = "com.alkimiapps"
 version = "0.4"
 val pluginId = "$group.gradle-dplink-plugin"
+
+java.sourceCompatibility = JavaVersion.VERSION_1_9
+java.targetCompatibility = JavaVersion.VERSION_1_9
 
 dependencies {
 	compile(kotlin("stdlib"))
@@ -49,4 +52,7 @@ tasks.withType<KotlinCompile> {
 	kotlinOptions.jvmTarget = "1.8"
 }
 
-println("Java version: ${JavaVersion.current()}")
+tasks.withType<JavaCompile> {
+	sourceCompatibility = "1.9"
+	targetCompatibility = "1.9"
+}
