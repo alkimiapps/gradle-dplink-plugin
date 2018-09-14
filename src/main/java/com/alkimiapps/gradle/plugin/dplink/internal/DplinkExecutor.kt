@@ -37,6 +37,7 @@ class DplinkExecutor(val config: DplinkConfig) {
 		it.deleteRecursively()
 		it.mkdirs()
 	}
+	val pathToRoot = "../".repeat(config.scriptsLocation.count { it == '/' })?.takeUnless { it.isEmpty() } ?: "./"
 	
 	fun execute() {
 		val dependentJavaModules = ArrayList<String>()
@@ -123,7 +124,7 @@ class DplinkExecutor(val config: DplinkConfig) {
 	
 	private fun makeAppScript(mainClass: String, executableJarName: String, classpath: String,
 							  jvmArgs: String, appArgs: String, outputDir: File) {
-		var commandString = "./java $jvmArgs -jar ../lib/$executableJarName $mainClass $appArgs"
+		var commandString = pathToRoot + "bin/java $jvmArgs -jar $pathToRoot/lib/$executableJarName $mainClass $appArgs"
 		
 		if (classpath.isNotEmpty())
 			commandString = "$commandString -cp $classpath"
