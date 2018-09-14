@@ -35,9 +35,6 @@ class DplinkExecutor(val config: DplinkConfig) {
 	val libs = config.libs.files.filter { it.isFile }
 	
 	init {
-		val buildLibsDir = buildDir.resolve("libs")
-		failIf(!buildLibsDir.mkdirs(), "Could not create libs dir at: $buildLibsDir")
-		
 		val dependentJavaModules = ArrayList<String>()
 		if (config.allJavaModules) {
 			allJavaModules().forEach { dependentJavaModules.add(it) }
