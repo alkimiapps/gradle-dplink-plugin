@@ -30,7 +30,7 @@ class DplinkExecutor(val config: DplinkConfig) {
 	val javaHome = config.javaHome
 	val modulesHome = config.modulesHome
 	val outputDir = config.outputDir
-	val libs = config.libs.files.flatMap { if (it.isFile) listOf(it) else it.listFiles().asList() }
+	val libs = config.libs.files.flatMap { if (it.isFile) listOf(it) else it.listFiles().filter { it.isFile } }
 	val executableJarName = config.executableJarName.takeUnless { it.isEmpty() }
 	val tmpDir = config.buildDir.resolve("tmp").resolve("dplink").also {
 		it.deleteRecursively()
@@ -109,7 +109,10 @@ class DplinkExecutor(val config: DplinkConfig) {
 	}
 	
 	private fun executableJar(): File {
-		val jar = config.libs.find { it.name == executableJarName } ?: config.libs.singleFile
+		val jar = libs.find { it.name == executableJarName } ?: run {
+			failIf(libs.size != 1, "Expected exactly one jar in libs. Please specify executableJarName.")
+			libs[0]
+		}
 		failIf(!jar.exists(), "Executable jar $jar does not exist.")
 		return jar
 	}

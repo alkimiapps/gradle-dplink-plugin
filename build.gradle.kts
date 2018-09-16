@@ -49,10 +49,11 @@ tasks.withType<KotlinCompile> {
 	kotlinOptions.jvmTarget = "1.8"
 }
 
-/*
-java.sourceCompatibility = JavaVersion.VERSION_1_9
-java.targetCompatibility = JavaVersion.VERSION_1_9
-tasks.withType<JavaCompile> {
-	sourceCompatibility = "1.9"
-	targetCompatibility = "1.9"
-}*/
+if(JavaVersion.current() > JavaVersion.VERSION_1_8) {
+	java.sourceCompatibility = JavaVersion.VERSION_1_9
+	java.targetCompatibility = JavaVersion.VERSION_1_9
+	tasks.withType<JavaCompile> {
+		sourceCompatibility = "1.9"
+		targetCompatibility = "1.9"
+	}
+}

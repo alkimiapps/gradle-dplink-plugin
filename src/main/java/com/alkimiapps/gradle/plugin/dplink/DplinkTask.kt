@@ -16,7 +16,7 @@ open class DplinkTask : DefaultTask(), DplinkConfig {
 	@Input override var modulesHome = javaHome
 	@Input override var outputDir = buildDir.resolve("app")
 	@Input override var executableJarName = ""
-	@Input override var mainClassName = ((project as ExtensionAware).extensions.getByName("application") as? org.gradle.api.plugins.JavaApplication)?.mainClassName ?: ""
+	@Input override var mainClassName = (project as ExtensionAware).extensions.findByType(org.gradle.api.plugins.JavaApplication::class.java)?.mainClassName ?: ""
 	@Input override var jvmArgs = ""
 	@Input override var appArgs = ""
 	@InputFiles override var libs: FileCollection = project.fileTree(buildDir.resolve("libs"))
