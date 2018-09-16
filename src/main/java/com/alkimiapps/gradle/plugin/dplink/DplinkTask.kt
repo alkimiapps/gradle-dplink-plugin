@@ -5,7 +5,6 @@ import com.alkimiapps.gradle.plugin.dplink.internal.DplinkExecutor
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.tasks.*
 import java.io.File
 
@@ -17,7 +16,7 @@ open class DplinkTask : DefaultTask(), DplinkConfig {
 	@Input override var modulesHome = javaHome
 	@Input override var outputDir = buildDir.resolve("app")
 	@Input override var executableJarName = ""
-	@Input override var mainClassName = ((project as ExtensionAware).extensions.getByName("application") as? JavaApplication)?.mainClassName ?: ""
+	@Input override var mainClassName = ((project as ExtensionAware).extensions.getByName("application") as? org.gradle.api.plugins.JavaApplication)?.mainClassName ?: ""
 	@Input override var jvmArgs = ""
 	@Input override var appArgs = ""
 	@InputFiles override var libs: FileCollection = project.fileTree(buildDir.resolve("libs"))
