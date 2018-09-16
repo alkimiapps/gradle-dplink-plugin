@@ -16,9 +16,6 @@ group = "com.alkimiapps"
 version = "0.4"
 val pluginId = "$group.gradle-dplink-plugin"
 
-java.sourceCompatibility = JavaVersion.VERSION_1_9
-java.targetCompatibility = JavaVersion.VERSION_1_9
-
 dependencies {
 	compile(kotlin("stdlib"))
 	
@@ -52,7 +49,10 @@ tasks.withType<KotlinCompile> {
 	kotlinOptions.jvmTarget = "1.8"
 }
 
+/*
+java.sourceCompatibility = JavaVersion.VERSION_1_9
+java.targetCompatibility = JavaVersion.VERSION_1_9
 tasks.withType<JavaCompile> {
 	sourceCompatibility = "1.9"
 	targetCompatibility = "1.9"
-}
+}*/

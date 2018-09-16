@@ -11,7 +11,7 @@ interface DplinkConfig {
 	val libs: FileCollection
 	val javaHome: File
 	val modulesHome: File
-	val executableJar: File
+	val executableJarName: String
 	
 	val mainClassName: String
 	val jvmArgs: String

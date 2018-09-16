@@ -94,7 +94,7 @@ class DplinkExecutorTest {
 		FileUtils.copyDirectory(executableJarsPath.toFile(), libsPath.toFile());
 		
 		dplinkConfig.mainClassName = "app.TakeAPeakDataLoader";
-		dplinkConfig.executableJar = libsPath.resolve("executable-all.jar").toFile();
+		dplinkConfig.executableJarName = "executable-all.jar";
 		new DplinkExecutor(dplinkConfig).execute();
 		
 		assertTrue(Files.exists(outputDir.resolve("bin/app")));
@@ -183,11 +183,11 @@ class SimpleConfig implements DplinkConfig {
 			}
 		});
 	}
-	File executableJar = new File("");
+	String executableJarName = "";
 	@NotNull
 	@Override
-	public File getExecutableJar() {
-		return executableJar;
+	public String getExecutableJarName() {
+		return executableJarName;
 	}
 	String mainClassName = "";
 	@NotNull

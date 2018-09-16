@@ -1,7 +1,6 @@
 package com.alkimiapps.gradle.plugin.dplink.internal
 
 import java.io.File
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
@@ -32,20 +31,20 @@ class DplinkExecutor(val config: DplinkConfig) {
 	val modulesHome = config.modulesHome
 	val outputDir = config.outputDir
 	val libs = config.libs.files.flatMap { if (it.isFile) listOf(it) else it.listFiles().asList() }
-	val executableJar = config.executableJar.takeUnless { it.name.isEmpty() }
+	val executableJarName = config.executableJarName.takeUnless { it.isEmpty() }
 	val tmpDir = config.buildDir.resolve("tmp").resolve("dplink").also {
 		it.deleteRecursively()
 		it.mkdirs()
 	}
-	val pathToRoot = "../".repeat(config.scriptsLocation.count { it == '/' })?.takeUnless { it.isEmpty() } ?: "./"
+	val pathToRoot = "../".repeat(config.scriptsLocation.count { it == '/' }).takeUnless { it.isEmpty() } ?: "./"
 	
 	fun execute() {
 		val dependentJavaModules = ArrayList<String>()
 		if (config.allJavaModules) {
 			allJavaModules().forEach { dependentJavaModules.add(it) }
 		} else {
-			if (config.fatJar && executableJar != null) {
-				listOf(executableJar)
+			if (config.fatJar && executableJarName != null) {
+				listOf(File(executableJarName))
 			} else {
 				libs
 			}.forEach { dependentJavaModules.addAll(dependentJavaModulesOfJar(it)) }
@@ -94,40 +93,29 @@ class DplinkExecutor(val config: DplinkConfig) {
 	
 	
 	private fun createApp() {
-		val jrelibs = outputDir.resolve("lib")
-		failIf(!jrelibs.exists(), "No lib dir at: " + jrelibs.parent.toString())
-		failIf(!jrelibs.isDirectory, "lib is not a directory: " + jrelibs.parent.toString())
+		val appLibs = outputDir.resolve("lib").resolve("libs")
 		failIf(config.mainClassName.isEmpty(), "Missing main class name - needed for executable jar")
 		
-		try {
-			val executableJar = executableJar()
-			val classpath = classpath(libs, jrelibs, executableJar)
-			if (config.verbose)
-				println("Copying $libs to $jrelibs")
-			libs.forEach { it.copyTo(jrelibs.resolve(it.name), true) }
-			
-			val jvmArgs = config.jvmArgs
-			val appArgs = config.appArgs
-			
-			makeAppScript(config.mainClassName, executableJar.name, classpath, jvmArgs, appArgs, outputDir)
-		} catch (e: IOException) {
-			throw RuntimeException(e)
-		}
+		val jar = executableJar()
+		if (config.verbose)
+			println("Copying $libs to $appLibs")
+		libs.forEach { it.copyTo(appLibs.resolve(it.name), true) }
+		
+		val jvmArgs = config.jvmArgs
+		val appArgs = config.appArgs
+		
+		makeAppScript(config.mainClassName, jvmArgs, jar.name, appArgs, outputDir)
 		
 	}
 	
 	private fun executableJar(): File {
-		val jar = executableJar ?: config.libs.singleFile
+		val jar = config.libs.find { it.name == executableJarName } ?: config.libs.singleFile
 		failIf(!jar.exists(), "Executable jar $jar does not exist.")
 		return jar
 	}
 	
-	private fun makeAppScript(mainClass: String, executableJarName: String, classpath: String,
-							  jvmArgs: String, appArgs: String, outputDir: File) {
-		var commandString = pathToRoot + "bin/java $jvmArgs -jar $pathToRoot/lib/$executableJarName $mainClass $appArgs"
-		
-		if (classpath.isNotEmpty())
-			commandString = "$commandString -cp $classpath"
+	private fun makeAppScript(mainClass: String, jvmArgs: String, executableJarName: String, appArgs: String, outputDir: File) {
+		val commandString = "${pathToRoot}bin/java $jvmArgs -jar ${pathToRoot}lib/libs/$executableJarName $mainClass $appArgs -cp ${pathToRoot}lib/libs"
 		
 		val unixExec = outputDir.resolve(config.scriptsLocation)
 		val winExec = unixExec.resolveSibling(unixExec.nameWithoutExtension + ".bat")
@@ -138,9 +126,6 @@ class DplinkExecutor(val config: DplinkConfig) {
 		unixExec.setExecutable(true)
 		winExec.setExecutable(true)
 	}
-	
-	private fun classpath(libs: Collection<File>, jreLibDir: File, executableJar: File): String =
-			libs.filter { it != executableJar }.joinToString(":") { "$jreLibDir/${it.name}" }
 	
 	fun <T> ArrayList<T>.addAll(stream: Stream<T>) = stream.forEach { add(it) }
 	
